@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Font Classification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .image-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px; /* Adjust height as needed */
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            display: none; /* Hide initially */
+        }
+        .buttons {
+            margin-bottom: 20px;
+        }
+        .buttons button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Font Classification</h1>
+    <div class="image-container">
+        <img id="font-image" src="" alt="Font Image">
+    </div>
+    <div class="buttons">
+        <p>Rank the font from 0 (least decorative) to 10 (most decorative):</p>
+        <button onclick="classifyFont(0)">0</button>
+        <button onclick="classifyFont(1)">1</button>
+        <button onclick="classifyFont(2)">2</button>
+        <button onclick="classifyFont(3)">3</button>
+        <button onclick="classifyFont(4)">4</button>
+        <button onclick="classifyFont(5)">5</button>
+        <button onclick="classifyFont(6)">6</button>
+        <button onclick="classifyFont(7)">7</button>
+        <button onclick="classifyFont(8)">8</button>
+        <button onclick="classifyFont(9)">9</button>
+    </div>
+    <div id="output"></div>
+
+    <script>
+        const fontImages = JSON.parse('{{ font_images | tojson | safe }}');
+        const savedLabels = JSON.parse('{{ saved_labels | tojson | safe }}');
+        let currentIndex = savedLabels.length;
+        const classifications = savedLabels;
+
+        function loadNextImage() {
+            const imgElement = document.getElementById('font-image');
+
+            if (currentIndex < fontImages.length) {
+                imgElement.src = fontImages[currentIndex];
+                imgElement.style.display = "block"; // Show image
+            } else {
+                document.querySelector('.image-container').innerHTML = "<h2>All images classified!</h2>";
+                document.querySelector('.buttons').style.display = "none"; // Hide buttons
+                document.getElementById('output').innerText = JSON.stringify(classifications, null, 2);
+                console.log(JSON.stringify(classifications));
+                saveLabels(); // Save labels when all images are classified
+            }
+        }
+
+        function classifyFont(rank) {
+            if (currentIndex < fontImages.length) {
+                const fontImage = fontImages[currentIndex];
+                classifications.push({ font: fontImage, rank: rank });
+                currentIndex++;
+                loadNextImage();
+                if (currentIndex % 10 === 0) { // Save progress every 10 classifications
+                    saveLabels();
+                }
+            }
+        }
+
+        function saveLabels() {
+            fetch('/save_labels', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(classifications)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Labels saved:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        window.onload = loadNextImage;
+    </script>
+</body>
+</html>
