@@ -43,7 +43,7 @@
         <button onclick="classifyFont(0)">0</button>
         <button onclick="classifyFont(1)">1</button>
         <button onclick="classifyFont(2)">2</button>
-        <button onclick="classifyFont(3)">3"></button>
+        <button onclick="classifyFont(3)">3</button>
         <button onclick="classifyFont(4)">4</button>
         <button onclick="classifyFont(5)">5</button>
         <button onclick="classifyFont(6)">6</button>
@@ -71,6 +71,7 @@
             if (currentIndex < fontImages.length) {
                 imgElement.src = fontImages[currentIndex];
                 imgElement.style.display = "block"; // Show image
+                console.log('Loaded image:', fontImages[currentIndex]); // Debugging log
             } else {
                 document.querySelector('.image-container').innerHTML = "<h2>All images classified!</h2>";
                 document.querySelector('.buttons').style.display = "none"; // Hide buttons
@@ -83,7 +84,7 @@
         function classifyFont(rank) {
             if (currentIndex < fontImages.length) {
                 const fontImage = fontImages[currentIndex];
-                classifications.push({ font: fontImage, rank: rank });
+                classifications.push({ image_url: fontImage, label: rank });
                 
                 // Send classification to the server immediately
                 saveLabelToDB(fontImage, rank);
@@ -93,17 +94,21 @@
             }
         }
 
-        function saveLabelToDB(font, rank) {
+        function saveLabelToDB(image_url, label) {
             fetch('/save_labels', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ font: font, rank: rank })
+                body: JSON.stringify([{ image_url: image_url, label: label }])
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Label saved:', data);
+                if (data.status === "success") {
+                    console.log('Label saved:', data);
+                } else {
+                    console.error('Error saving label:', data.message);
+                }
             })
             .catch((error) => {
                 console.error('Error:', error);
