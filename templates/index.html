@@ -15,12 +15,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 400px; /* Adjust height as needed */
+            height: 400px;
         }
         .image-container img {
             max-width: 100%;
             max-height: 100%;
-            display: none; /* Hide initially */
+            display: none;
         }
         .buttons {
             margin-bottom: 20px;
@@ -43,7 +43,7 @@
         <button onclick="classifyFont(0)">0</button>
         <button onclick="classifyFont(1)">1</button>
         <button onclick="classifyFont(2)">2</button>
-        <button onclick="classifyFont(3)">3</button>
+        <button onclick="classifyFont(3)">3"></button>
         <button onclick="classifyFont(4)">4</button>
         <button onclick="classifyFont(5)">5</button>
         <button onclick="classifyFont(6)">6</button>
@@ -54,10 +54,16 @@
     <div id="output"></div>
 
     <script>
-        const fontImages = JSON.parse('{{ font_images | tojson | safe }}');
-        const savedLabels = JSON.parse('{{ saved_labels | tojson | safe }}');
+        // Use a temporary variable to hold the JSON data
+        const fontImagesData = '{{ font_images | tojson | safe }}';
+        const savedLabelsData = '{{ saved_labels | tojson | safe }}';
+
+        // Parse the JSON data
+        const fontImages = JSON.parse(fontImagesData);
+        const savedLabels = JSON.parse(savedLabelsData);
+
         let currentIndex = savedLabels.length;
-        const classifications = savedLabels;
+        const classifications = [...savedLabels];  // Ensure we don't overwrite existing data
 
         function loadNextImage() {
             const imgElement = document.getElementById('font-image');
@@ -78,25 +84,26 @@
             if (currentIndex < fontImages.length) {
                 const fontImage = fontImages[currentIndex];
                 classifications.push({ font: fontImage, rank: rank });
+                
+                // Send classification to the server immediately
+                saveLabelToDB(fontImage, rank);
+
                 currentIndex++;
                 loadNextImage();
-                if (currentIndex % 10 === 0) { // Save progress every 10 classifications
-                    saveLabels();
-                }
             }
         }
 
-        function saveLabels() {
+        function saveLabelToDB(font, rank) {
             fetch('/save_labels', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(classifications)
+                body: JSON.stringify({ font: font, rank: rank })
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Labels saved:', data);
+                console.log('Label saved:', data);
             })
             .catch((error) => {
                 console.error('Error:', error);
